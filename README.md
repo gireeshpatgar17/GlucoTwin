@@ -29,7 +29,7 @@ Python, Streamlit, pandas, NumPy, scikit-learn, Plotly, pytest, and joblib. The 
 
 ## Evaluation results
 
-The generated run used 60 profiles and 120,960 15-minute readings. Its chronological holdout contained 96,420 training and 24,060 test rows, with cutoff `2026-10-15T17:30:00+00:00`. The offline NumPy ridge fallback achieved **5.048 mg/dL MAE**; the current-glucose persistence baseline achieved **8.567 mg/dL MAE**. This result describes only the deterministic synthetic generator and is not clinical performance. Full run details are saved in [`data/metrics.json`](data/metrics.json) and `models/metrics.json`.
+The verified scikit-learn run used 60 profiles and 120,960 simulated 15-minute readings. The chronological split trained on 95,880 rows, evaluated on 24,120 later rows, and used cutoff `2026-10-15T17:30:00+00:00`. A two-hour purge excludes training rows whose target reaches the test period. `HistGradientBoostingRegressor` achieved **3.335 mg/dL MAE**; the current-glucose persistence baseline achieved **8.580 mg/dL MAE**. These results describe only the deterministic synthetic generator and are not clinical performance. Full run details are saved in [`data/metrics.json`](data/metrics.json) and `models/metrics.json`.
 
 ## Setup
 
@@ -45,11 +45,11 @@ pytest -q
 streamlit run app.py
 ```
 
-The checked-in CSVs and `models/glucose_model.joblib` are generated using seed 2026. Re-run the commands above to regenerate. Offline fallback note: if scikit-learn/joblib are not installed, `train_model.py` uses NumPy ridge and pickle; app runtime still requires Streamlit and Plotly.
+The checked-in CSVs and `models/glucose_model.joblib` are generated using seed 2026. Re-run the commands above to regenerate. If scikit-learn/joblib are unavailable, `train_model.py` uses a NumPy ridge fallback and pickle; the Streamlit runtime still requires Streamlit and Plotly. Verified with Python 3.12: all four pytest tests pass, the Streamlit app returns HTTP 200, and a Streamlit AppTest confirms that advancing one step changes the stream time, current sensor value, and prediction.
 
 ## Architecture
 
-`generate_data.py` creates synthetic EHR and sensor CSVs. `train_model.py` aligns each row with the reading eight intervals (120 minutes) later, joins patient features, uses a chronological pooled-time holdout, compares against current-glucose persistence, and stores the model and metrics. `app.py` loads these local artifacts and displays a simulated stream and forecast. See [`docs/architecture.pdf`](docs/architecture.pdf).
+`generate_data.py` creates synthetic EHR and sensor CSVs. `train_model.py` aligns each row with the reading eight intervals (120 minutes) later, joins patient features, and uses an 80/20 chronological pooled-time holdout with a 120-minute purge. It compares against current-glucose persistence and stores the model and metrics. Prediction features include the selected patient's current simulated reading and static synthetic profile only; the dashboard does not pass later sensor rows to the predictor. `app.py` advances the cursor by 15 minutes and recomputes the prediction from the new current row. See [`docs/architecture.pdf`](docs/architecture.pdf).
 
 ## Limitations and medical-use notice
 

@@ -35,7 +35,7 @@ def build_training_frame(sensor: pd.DataFrame, patients: pd.DataFrame) -> pd.Dat
     if missing:
         raise ValueError(f"sensor data missing columns: {sorted(missing)}")
     sensor = sensor.copy()
-    sensor["timestamp"] = pd.to_datetime(sensor["timestamp"], utc=True, errors="coerce")
+    sensor["timestamp"] = pd.to_datetime(sensor["timestamp"], format="mixed", utc=True, errors="coerce")
     if sensor["timestamp"].isna().any():
         raise ValueError("sensor timestamps must be valid")
     sensor = sensor.sort_values(["patient_id", "timestamp"])
@@ -45,6 +45,7 @@ def build_training_frame(sensor: pd.DataFrame, patients: pd.DataFrame) -> pd.Dat
     if (delta.dropna() != pd.Timedelta(minutes=15)).any():
         raise ValueError("sensor readings must be spaced exactly 15 minutes apart")
     sensor[TARGET] = sensor.groupby("patient_id")["glucose_mg_dl"].shift(-8)
+    sensor["target_timestamp"] = sensor["timestamp"] + pd.Timedelta(minutes=120)
     frame = sensor.merge(patients, on="patient_id", how="left", validate="many_to_one")
     frame = frame.dropna(subset=FEATURES + [TARGET]).copy()
     return frame
@@ -55,10 +56,12 @@ def train(data_dir: str | Path = DATA, model_path: str | Path = MODEL) -> dict:
     patients = pd.read_csv(data_dir / "patients.csv")
     sensor = pd.read_csv(data_dir / "sensor_readings.csv")
     frame = build_training_frame(sensor, patients)
-    # Hold out final 20% of time per patient. No random row split or future data leakage.
+    # Hold out the latest 20% of timestamps. Purge training rows whose labels
+    # reach the test boundary, so no training target overlaps the test period.
     frame = frame.sort_values(["timestamp", "patient_id"]).reset_index(drop=True)
     cutoff = frame["timestamp"].quantile(.8)
-    train_df, test_df = frame[frame.timestamp <= cutoff], frame[frame.timestamp > cutoff]
+    train_df = frame[frame.target_timestamp < cutoff]
+    test_df = frame[frame.timestamp >= cutoff]
     if train_df.empty or test_df.empty:
         raise ValueError("chronological split produced an empty partition")
     X_train, y_train = train_df[FEATURES], train_df[TARGET]
@@ -81,7 +84,7 @@ def train(data_dir: str | Path = DATA, model_path: str | Path = MODEL) -> dict:
     pred = model.predict(X_test.to_numpy(float) if model_name.startswith("NumpyRidge") else X_test)
     metrics = {"target": "glucose_mg_dl at timestamp + 2 hours",
                "horizon_minutes": 120, "sample_cadence_minutes": 15,
-               "split": "chronological per pooled timestamp; earliest 80% train, latest 20% test",
+               "split": "chronological pooled timestamp; latest 20% test; 120-minute purge keeps all train targets before test cutoff",
                "cutoff_utc": cutoff.isoformat(), "train_rows": len(train_df),
                "test_rows": len(test_df), "baseline_last_value_mae_mg_dl": round(float(baseline), 3),
                "model_mae_mg_dl": round(float(mean_absolute_error(y_test, pred) if mean_absolute_error else np.mean(np.abs(y_test.to_numpy()-pred))), 3),

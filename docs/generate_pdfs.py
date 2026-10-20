@@ -54,10 +54,10 @@ story = [P("GlucoTwin", "Hero"), P("Architecture brief | Digital Twin Challenge 
     P("Data flow", "H2x"), table([["Stage","What happens","Artifact"],
         ["Generate","Seeded fictional demographics, BMI, HbA1c and time series; glucose, heart rate, activity, sleep and cyclic time features.","patients.csv<br/>sensor_readings.csv"],
         ["Align","Sort each patient stream, require exact 15-minute intervals, and shift glucose eight samples to form t + 120 min target.","training frame"],
-        ["Evaluate","Chronological pooled timestamp split: first 80% for fit, latest 20% for test. Compare with current-glucose persistence.","metrics.json"],
+        ["Evaluate","Chronological pooled-time holdout with latest 20% test and a 120-minute purge so training targets stay before the test boundary.","metrics.json"],
         ["Serve","Streamlit selects a synthetic patient, advances the virtual stream, builds features and displays a local model estimate.","app.py"],
         ["Review","Tests cover deterministic generation, horizon alignment, chronological training and invalid cadence.","tests/" ]], [27*mm,91*mm,48*mm], 8),
-    P("Model and measured synthetic run", "H2x"), P(f"Target: glucose (mg/dL) at t + 120 minutes. This checked-in run used {metrics['model']}, with {metrics['train_rows']:,} training rows and {metrics['test_rows']:,} test rows. Model MAE: {metrics['model_mae_mg_dl']:.3f} mg/dL. Last-value baseline MAE: {metrics['baseline_last_value_mae_mg_dl']:.3f} mg/dL. Split cutoff: {metrics['cutoff_utc']}. These figures reflect only the synthetic generator."),
+    P("Model and measured synthetic run", "H2x"), P(f"Target: glucose (mg/dL) at t + 120 minutes. This checked-in run used {metrics['model']}, with {metrics['train_rows']:,} training rows and {metrics['test_rows']:,} test rows. Model MAE: {metrics['model_mae_mg_dl']:.3f} mg/dL. Last-value baseline MAE: {metrics['baseline_last_value_mae_mg_dl']:.3f} mg/dL. Split cutoff: {metrics['cutoff_utc']}. A 120-minute purge prevents training labels from crossing the cutoff. These figures reflect only the synthetic generator."),
     P("Reproducibility and limitations", "H2x"), P("Run python generate_data.py, python train_model.py, then streamlit run app.py. A seeded NumPy ridge fallback writes the artifact in offline environments; with declared dependencies installed, training uses scikit-learn HistGradientBoostingRegressor and joblib. The exact model choice is recorded in metrics. Synthetic distributions do not establish real-world accuracy, safety, equity, or usefulness. Do not use for patient care."),
     P("System requirements", "H2x"), P("Python with pandas, NumPy, scikit-learn, Streamlit, Plotly, pytest and joblib. The offline fallback additionally uses the Python standard library. No cloud services or external health-data connections.")]
 arch.build(story, onFirstPage=footer, onLaterPages=footer)
@@ -84,7 +84,7 @@ slides.append(PageBreak())
 slide("Data and model","Seeded generation makes the complete demo reproducible",[
     "60 synthetic EHR-style profiles; 120,960 simulated readings at 15-minute intervals.",
     "Features: glucose, heart rate, activity, sleep, time-of-day, age, BMI, HbA1c and duration.",
-    "Chronological holdout: earlier timestamps train, later timestamps test; compare with last-value persistence."],
+    "Chronological holdout with a 120-minute purge: training labels stay before the later test timestamps."],
     [["Model MAE","Baseline MAE","Test rows"],[f"{metrics['model_mae_mg_dl']:.3f} mg/dL",f"{metrics['baseline_last_value_mae_mg_dl']:.3f} mg/dL",f"{metrics['test_rows']:,}"]])
 slides.append(PageBreak())
 slide("Live demo","Streamlit dashboard and virtual patient state",[

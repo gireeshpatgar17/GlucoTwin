@@ -10,7 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from train_model import FEATURES
+from forecast import advance_index, predict_current_state
 
 ROOT = Path(__file__).resolve().parent
 
@@ -61,11 +61,10 @@ if "sim_index" not in st.session_state or st.session_state.get("sim_patient") !=
     st.session_state.sim_patient = patient_id
 advance = st.sidebar.button("Advance sensor stream by 15 minutes")
 if advance:
-    st.session_state.sim_index = min(st.session_state.sim_index + 1, len(history) - 1)
+    st.session_state.sim_index = advance_index(st.session_state.sim_index, len(history))
 idx = int(np.clip(st.session_state.sim_index, 0, len(history) - 1))
 current = history.iloc[idx]
-feature_row = pd.DataFrame([{**current.to_dict(), **profile.to_dict()}])[FEATURES]
-prediction = float(artifact["model"].predict(feature_row.to_numpy(float) if metrics["model"].startswith("NumpyRidge") else feature_row)[0])
+prediction = predict_current_state(artifact, current, profile)
 forecast_time = current.timestamp + pd.Timedelta(hours=2)
 
 left, right = st.columns([1, 2])
@@ -86,14 +85,14 @@ with left:
     st.caption(f"Stream position: {current.timestamp.strftime('%Y-%m-%d %H:%M UTC')} (simulated)")
 with right:
     st.subheader("Two-hour glucose forecast")
-    st.metric("Predicted glucose", f"{prediction:.0f} mg/dL", help="Model estimate at the current simulated timestamp plus 120 minutes.")
+    st.metric("Predicted glucose", f"{prediction:.1f} mg/dL", help="Model estimate at the current simulated timestamp plus 120 minutes.")
     st.caption(f"Prediction target time: {forecast_time.strftime('%Y-%m-%d %H:%M UTC')} | **Prediction, not an observed value**")
     visible = history.iloc[max(0, idx - 95):idx + 1]
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=visible.timestamp, y=visible.glucose_mg_dl, name="Simulated sensor values", mode="lines", line={"color":"#58a6ff"}))
     fig.add_trace(go.Scatter(x=[forecast_time], y=[prediction], name="Model prediction (+2h)", mode="markers", marker={"color":"#ffb454","size":12,"symbol":"diamond"}))
     fig.update_layout(height=370, margin={"l":10,"r":10,"t":25,"b":10}, yaxis_title="Glucose (mg/dL)", xaxis_title="Timestamp (UTC)", legend={"orientation":"h"})
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 st.subheader("Model evaluation")
 st.caption("Held-out later timestamps from synthetic data. This is an engineering demonstration, not clinical validation.")

@@ -11,7 +11,8 @@
 - [x] Architecture PDF, presentation PDF, and demo script
 - [ ] Replace team, college, and contact placeholders with supplied details
 - [ ] Record and add an actual demo video link
-- [ ] Install dependencies and run the preferred scikit-learn model where network/package installation is available
-- [ ] Run the Streamlit app in an environment with Streamlit and Plotly installed
-- [ ] Run `pytest -q` in an environment with pytest installed (direct smoke checks passed here)
+- [x] Install declared dependencies into local `.venv` and train the scikit-learn model
+- [x] Run `pytest -q` (4 passed)
+- [x] Launch Streamlit locally; HTTP startup check returned 200
+- [x] Advance the dashboard stream and verify current sensor value and forecast update
 - [ ] Confirm event-specific submission format and upload destination with organizers

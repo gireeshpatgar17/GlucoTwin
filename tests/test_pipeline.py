@@ -5,6 +5,7 @@ import pytest
 
 from generate_data import generate_data
 from train_model import build_training_frame, train
+from forecast import advance_index, build_prediction_features, predict_current_state
 
 
 def test_generation_is_reproducible(tmp_path):
@@ -29,6 +30,9 @@ def test_two_hour_target_and_chronological_training(tmp_path):
     assert metrics["horizon_minutes"] == 120
     assert metrics["train_rows"] > metrics["test_rows"]
     assert metrics["model_mae_mg_dl"] >= 0
+    cutoff = pd.Timestamp(metrics["cutoff_utc"])
+    assert frame.loc[frame.target_timestamp < cutoff, "target_timestamp"].max() < cutoff
+    assert frame.loc[frame.timestamp >= cutoff, "timestamp"].min() >= cutoff
     assert (tmp_path / "model" / "metrics.json").exists()
 
 
@@ -42,3 +46,20 @@ def test_irregular_cadence_rejected():
         "hba1c_pct":[7.],"diabetes_duration_years":[5]})
     with pytest.raises(ValueError, match="exactly 15 minutes"):
         build_training_frame(sensor, patient)
+
+
+def test_advanced_sensor_state_reaches_prediction_features():
+    profile = {"age_years":55,"bmi_kg_m2":30,"hba1c_pct":8.,"diabetes_duration_years":5}
+    before = {"glucose_mg_dl":120.,"heart_rate_bpm":70.,"activity_min_15m":0.,
+              "sleeping":0,"hour_sin":0.,"hour_cos":1.,"future_glucose_mg_dl":999.}
+    after = {**before,"glucose_mg_dl":180.}
+    class EchoCurrentGlucose:
+        def predict(self, features):
+            values = features if isinstance(features, pd.DataFrame) else pd.DataFrame(features)
+            return values.iloc[:,0].to_numpy()
+    artifact = {"model":EchoCurrentGlucose(),"metrics":{"model":"test-double"}}
+    assert advance_index(4,10) == 5
+    assert advance_index(9,10) == 9
+    assert build_prediction_features(after,profile).iloc[0].glucose_mg_dl == 180.
+    assert "future_glucose_mg_dl" not in build_prediction_features(after,profile).columns
+    assert predict_current_state(artifact,after,profile) != predict_current_state(artifact,before,profile)

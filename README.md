@@ -8,7 +8,6 @@
 - **Team lead contact:** gireeshpatgar17@gmail.com
 - **Presentation:** [docs/presentation.pdf](docs/presentation.pdf)
 - **Architecture:** [docs/architecture.pdf](docs/architecture.pdf)
-- **Timed 22-minute demo script:** [docs/demo_script.md](docs/demo_script.md)
 
 ## Problem statement and healthcare use case
 

@@ -3,10 +3,9 @@
 ## Submission details
 
 - **Project title:** GlucoTwin — Synthetic Two-Hour Glucose Digital Twin
-- **Team members:** [Add team member names]
-- **College / institution:** [Add college or institution]
-- **Team lead contact:** [Add your email; do not publish personal contact details without consent]
-- **Phone:** [Add only if required and voluntarily supplied]
+- **Team members:** Gireesh Sadanand Patgar
+- **College / institution:** The National Institute of Engineering, Mysuru
+- **Team lead contact:** gireeshpatgar17@gmail.com
 - **Presentation:** [docs/presentation.pdf](docs/presentation.pdf)
 - **Architecture:** [docs/architecture.pdf](docs/architecture.pdf)
 - **Timed 22-minute demo script:** [docs/demo_script.md](docs/demo_script.md)

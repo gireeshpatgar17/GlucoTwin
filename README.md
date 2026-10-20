@@ -7,9 +7,10 @@
 - **College / institution:** [Add college or institution]
 - **Team lead contact:** [Add your email; do not publish personal contact details without consent]
 - **Phone:** [Add only if required and voluntarily supplied]
-- **Presentation:** [`docs/presentation.pdf`](docs/presentation.pdf)
-- **Architecture:** [`docs/architecture.pdf`](docs/architecture.pdf)
-- **Demo video:** [Video link to be added after recording]
+- **Presentation:** [docs/presentation.pdf](docs/presentation.pdf)
+- **Architecture:** [docs/architecture.pdf](docs/architecture.pdf)
+- **Timed 22-minute demo script:** [docs/demo_script.md](docs/demo_script.md)
+- **Demo video:** **Pending**. Add a link only after the real recording is uploaded.
 
 ## Problem statement and healthcare use case
 
@@ -22,6 +23,22 @@ This proof of concept explores how a patient-specific digital twin interface cou
 - Trains on earlier timestamps and evaluates on later timestamps; reports MAE beside a last-value baseline.
 - Shows a patient profile, virtual stream state, recent history, prediction and actual run metrics in Streamlit.
 - Advances the simulated stream in 15-minute increments. Labels EHR profile, simulated sensor values, and prediction separately.
+- Uses no observed patient data. Every profile and sensor value is synthetic or simulated.
+
+## Competition requirements coverage
+
+| Requirement | Implementation and evidence |
+|---|---|
+| Synthetic historical EHR-style profiles | `data/patients.csv`: patient ID, age, sex, BMI, HbA1c, duration, and medication category. |
+| Timestamped sensor stream | `data/sensor_readings.csv`: glucose, heart rate, activity, sleep, and time features at 15-minute cadence. |
+| Clear two-hour prediction target | `train_model.py`: glucose at timestamp `t + 120 minutes`, aligned eight rows ahead. |
+| Reproducible pipeline and baseline | Seeded generator, scikit-learn model, chronological holdout, two-hour purge, and current-glucose persistence baseline. |
+| Evaluation metrics | Actual synthetic run is documented below and in `data/metrics.json`. |
+| Interactive dashboard | `app.py`: choose patient, inspect profile and history, advance sensor stream, view forecast and metrics. |
+| Data and prediction labels | Dashboard identifies profile as synthetic EHR, readings as simulated, and forecast as a prediction. No observed values are presented. |
+| Input validation and automated tests | Timestamp/cadence checks in training pipeline; `pytest -q` currently passes four tests. |
+| Medical-use limitations | Synthetic-only, non-clinical status appears in the app and this README. |
+| Submission documents | Architecture, 11-slide presentation, and timed demo script are linked above. |
 
 ## Technical stack and model
 
@@ -45,7 +62,7 @@ pytest -q
 streamlit run app.py
 ```
 
-The checked-in CSVs and `models/glucose_model.joblib` are generated using seed 2026. Re-run the commands above to regenerate. If scikit-learn/joblib are unavailable, `train_model.py` uses a NumPy ridge fallback and pickle; the Streamlit runtime still requires Streamlit and Plotly. Verified with Python 3.12: all four pytest tests pass, the Streamlit app returns HTTP 200, and a Streamlit AppTest confirms that advancing one step changes the stream time, current sensor value, and prediction.
+The checked-in CSVs and `models/glucose_model.joblib` are generated using seed 2026. Re-run the commands above to regenerate. If scikit-learn/joblib are unavailable, `train_model.py` uses a NumPy ridge fallback and pickle; the Streamlit runtime still requires Streamlit and Plotly. Verified with Python 3.12: all four pytest tests pass, the Streamlit app returns HTTP 200, and Streamlit AppTest confirms patient selection and stream advance change the profile, current sensor state, and prediction. A real browser screenshot was not available during document preparation, so the presentation uses verified interaction values instead of a screenshot.
 
 ## Architecture
 

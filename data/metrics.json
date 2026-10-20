@@ -1,0 +1,13 @@
+{
+  "target": "glucose_mg_dl at timestamp + 2 hours",
+  "horizon_minutes": 120,
+  "sample_cadence_minutes": 15,
+  "split": "chronological per pooled timestamp; earliest 80% train, latest 20% test",
+  "cutoff_utc": "2026-10-15T17:30:00+00:00",
+  "train_rows": 96420,
+  "test_rows": 24060,
+  "baseline_last_value_mae_mg_dl": 8.567,
+  "model_mae_mg_dl": 5.048,
+  "model": "NumpyRidge (offline fallback; install requirements for scikit-learn model)",
+  "synthetic_only": true
+}

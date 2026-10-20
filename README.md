@@ -9,7 +9,6 @@
 - **Presentation:** [docs/presentation.pdf](docs/presentation.pdf)
 - **Architecture:** [docs/architecture.pdf](docs/architecture.pdf)
 - **Timed 22-minute demo script:** [docs/demo_script.md](docs/demo_script.md)
-- **Demo video:** **Pending**. Add a link only after the real recording is uploaded.
 
 ## Problem statement and healthcare use case
 
